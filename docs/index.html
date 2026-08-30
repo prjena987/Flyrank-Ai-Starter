@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ranking Signal Analysis: CTR Opportunity Detection</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #2563eb;
+        --accent-light: #dbeafe;
+        --border: #e2e8f0;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+      }
+      header {
+        text-align: center;
+        padding: 3rem 0 2rem;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 2rem;
+      }
+      h1 {
+        font-size: 1.9rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 0.5rem;
+      }
+      .subtitle {
+        font-size: 1.1rem;
+        color: var(--muted);
+        font-weight: 400;
+      }
+      .meta {
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-top: 1rem;
+      }
+      .badge {
+        display: inline-block;
+        background: var(--accent-light);
+        color: var(--accent);
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin: 0.25rem;
+      }
+      section {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+      h2 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--text);
+        border-left: 4px solid var(--accent);
+        padding-left: 0.75rem;
+      }
+      h3 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 1.25rem 0 0.5rem;
+      }
+      p {
+        margin-bottom: 1rem;
+      }
+      ul,
+      ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      li {
+        margin-bottom: 0.4rem;
+      }
+      .highlight {
+        background: #fef3c7;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .warning {
+        background: #fee2e2;
+        border-left: 4px solid #dc2626;
+        padding: 1rem;
+        border-radius: 0 8px 8px 0;
+        margin: 1rem 0;
+      }
+      .info {
+        background: #dbeafe;
+        border-left: 4px solid var(--accent);
+        padding: 1rem;
+        border-radius: 0 8px 8px 0;
+        margin: 1rem 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+        font-size: 0.9rem;
+      }
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.6rem 0.8rem;
+        text-align: left;
+      }
+      th {
+        background: #f1f5f9;
+        font-weight: 600;
+      }
+      tr:nth-child(even) {
+        background: #f8fafc;
+      }
+      .chart {
+        background: #f1f5f9;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        margin: 1rem 0;
+      }
+      .chart img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 6px;
+      }
+      .chart p {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+      .recommendation {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 0.75rem 0;
+      }
+      .recommendation strong {
+        color: #15803d;
+      }
+      code {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        background: #f1f5f9;
+        padding: 0.15rem 0.35rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      pre {
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-size: 0.85rem;
+        margin: 1rem 0;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.85rem;
+        padding: 2rem 0;
+        border-top: 2px solid var(--border);
+        margin-top: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>
+          Ranking Signal Analysis: CTR Opportunity Detection in Search
+          Performance Data
+        </h1>
+        <p class="subtitle">
+          Which content signals distinguish high-CTR from low-CTR pages at
+          similar search positions?
+        </p>
+        <div class="meta">
+          <span class="badge">FlyRank ML Internship Capstone</span>
+          <span class="badge">Ranking Signal Analysis Lane</span>
+          <span class="badge">Machine Learning Track</span>
+          <br /><br />
+          <strong>Dataset:</strong> FlyRank Internship Warehouse (starter slice,
+          30,000 rows)<br />
+          <strong>Validation:</strong> Client-holdout split (8 test clients,
+          2,754 pages)<br />
+          <strong>Code:</strong>
+          <a href="https://github.com/prjena987/Flyrank-Ai-Starter"
+            >github.com/prjena987/Flyrank-Ai-Starter</a
+          >
+        </div>
+      </header>
+
+      <section>
+        <h2>Abstract</h2>
+        <p>
+          Content teams face a prioritization problem: thousands of pages rank
+          in search, but limited review capacity means only a subset can be
+          optimized. We ask which
+          <span class="highlight"
+            >observable content and engagement signals</span
+          >
+          distinguish high-click-through-rate (CTR) pages from low-CTR pages
+          <em>when they occupy similar search positions</em>. Using the FlyRank
+          starter dataset of 30,000 content items across 32 pseudonymized
+          clients, we define a position-tier-stratified label (top 25% vs.
+          bottom 25% CTR within each tier) and compare a transparent rule-based
+          baseline against logistic regression, decision tree, and random forest
+          models under client-holdout validation. The random forest achieves
+          <span class="highlight">ROC AUC 0.998</span> and
+          <span class="highlight">Precision@50 1.000</span> on this synthetic
+          slice, substantially outperforming the baseline. The strongest
+          differentiating signals are engagement rate, content age, and scroll
+          depth. We translate these findings into a ranked action playbook with
+          five reason-coded recommendation classes. All results are
+          observational and decision-support only; they do not establish causal
+          impact of refreshes on recovery.
+        </p>
+      </section>
+
+      <section>
+        <h2>1. Introduction & Problem Statement</h2>
+        <p>
+          Search engine optimization at scale is a ranking problem in two
+          senses: pages must rank on Google, and content teams must rank their
+          own review queues. The second problem—<em
+            >which page should a human reviewer open first?</em
+          >—is the focus of this work.
+        </p>
+        <p>
+          A common pitfall in CTR analysis is comparing click-through rates
+          across different positions. A page at position 2 naturally earns more
+          clicks than a page at position 9, so raw CTR comparisons confound
+          position quality with content quality. We solve this by
+          <span class="highlight"
+            >stratifying all comparisons within position tiers</span
+          >
+          (top 3, page 1, striking distance, pages 3–5, deep). Within each tier,
+          we ask: given similar visibility, which pages over-capture or
+          under-capture clicks?
+        </p>
+        <p>
+          The decision this work supports:
+          <strong
+            >Given a team capacity of 50 pages to review per week, which 50
+            should they prioritize for title/meta review, content expansion, or
+            engagement improvement?</strong
+          >
+        </p>
+      </section>
+
+      <section>
+        <h2>2. Data</h2>
+        <h3>2.1 Source & Scope</h3>
+        <p>
+          We use the FlyRank ML Internship starter dataset, a public-safe
+          pseudonymized release of
+          <code>content_refresh_anonymized.csv</code> (30,000 rows × 44 columns,
+          32 clients). All metrics aggregate a trailing 90-day window. The
+          dataset contains observable signals only—no product decision flags, no
+          raw queries, no client names or domains.
+        </p>
+
+        <h3>2.2 Inclusion & Exclusion Criteria</h3>
+        <table>
+          <tr>
+            <th>Criterion</th>
+            <th>Value</th>
+            <th>Rationale</th>
+          </tr>
+          <tr>
+            <td>Minimum impressions</td>
+            <td>≥ 100 per 90 days</td>
+            <td>Stable CTR estimate; filters noise</td>
+          </tr>
+          <tr>
+            <td>Position data</td>
+            <td><code>avg_position &gt; 0</code></td>
+            <td>Excludes rows with no GSC position data</td>
+          </tr>
+          <tr>
+            <td>GA4 sessions</td>
+            <td><code>sessions_90d &gt; 0</code></td>
+            <td>Need engagement signals for comparison</td>
+          </tr>
+          <tr>
+            <td>Excluded features</td>
+            <td><code>trend_direction</code>, <code>trend_pct</code></td>
+            <td>Label leakage risk</td>
+          </tr>
+          <tr>
+            <td>Excluded keys</td>
+            <td><code>content_id</code>, <code>client_id</code></td>
+            <td>Join keys only; not model features</td>
+          </tr>
+        </table>
+        <p>
+          After filtering: <strong>22,006 rows</strong> in the analysis
+          population; <strong>12,550 rows</strong> in the modeling population.
+        </p>
+
+        <h3>2.3 Missingness & Systematic Gaps</h3>
+        <div class="info">
+          <strong>Note:</strong> Missingness is systematic by
+          <code>content_type</code>. <code>feedly article</code> rows have no
+          keyword data. We fill these with <code>"unknown"</code> for
+          categoricals and <code>0</code> for numerics, acknowledging that zero
+          encodes "no keyword context" for feedly articles.
+        </div>
+      </section>
+
+      <section>
+        <h2>3. Methodology</h2>
+
+        <h3>3.1 Label Definition</h3>
+        <p>
+          Within each <code>position_tier</code>, we compute the 25th and 75th
+          percentiles of <code>ctr</code>. Pages at or above the 75th percentile
+          are labeled <span class="highlight">high CTR (1)</span>; pages at or
+          below the 25th percentile are labeled
+          <span class="highlight">low CTR (0)</span>. The middle 50% are
+          excluded to sharpen the classification signal.
+        </p>
+
+        <h3>3.2 Features</h3>
+        <p>
+          <strong>Numeric (20 features):</strong> search_volume, competition,
+          cpc, word_count, char_count, content_age_days, days_since_last_update,
+          log-transformed 90-day totals, days_with_impressions,
+          days_with_sessions, engagement_rate, scroll_rate, ai_traffic_pct, plus
+          binary flags.
+        </p>
+        <p>
+          <strong>Categorical (8 features):</strong> competition_level,
+          content_type, main_intent, age_tier, freshness_tier, word_count_tier,
+          impression_tier, position_tier.
+        </p>
+
+        <h3>3.3 Baseline</h3>
+        <p>
+          Before any machine learning, we construct a transparent rule-based
+          score with six weighted signals:
+        </p>
+        <ul>
+          <li>High engagement rate (&gt;50%): +0.25</li>
+          <li>High scroll rate (&gt;60%): +0.15</li>
+          <li>Fresh content (≤90 days since update): +0.20</li>
+          <li>Deep content (≥1500 words): +0.15</li>
+          <li>Strong position (top 3 or page 1): +0.15</li>
+          <li>Search demand (&gt;1000 volume): +0.10</li>
+        </ul>
+
+        <h3>3.4 Models</h3>
+        <p>
+          We train three models, all with <code>class_weight='balanced'</code>:
+        </p>
+        <ul>
+          <li>
+            <strong>Logistic Regression:</strong> Linear, highly interpretable
+            coefficients.
+          </li>
+          <li>
+            <strong>Decision Tree (max_depth=8):</strong> Transparent splits,
+            easy to inspect.
+          </li>
+          <li>
+            <strong>Random Forest (200 trees, max_depth=12):</strong> Stronger
+            performance, feature importance available.
+          </li>
+        </ul>
+
+        <h3>3.5 Validation Design</h3>
+        <p>
+          <strong>Client-holdout split.</strong> We use
+          <code>GroupShuffleSplit(test_size=0.25)</code> grouped by
+          <code>client_id</code>. Train: 22 clients (9,796 pages). Test: 8
+          clients (2,754 pages). Zero client overlap.
+        </p>
+
+        <h3>3.6 Leakage Audit</h3>
+        <table>
+          <tr>
+            <th>Check</th>
+            <th>Result</th>
+          </tr>
+          <tr>
+            <td>Feature window overlaps target window?</td>
+            <td>No — all features from 90-day trailing window</td>
+          </tr>
+          <tr>
+            <td>
+              <code>trend_direction</code> or <code>trend_pct</code> used as
+              feature?
+            </td>
+            <td>No — explicitly excluded</td>
+          </tr>
+          <tr>
+            <td>Product decision flags in features?</td>
+            <td>No — not present in dataset</td>
+          </tr>
+          <tr>
+            <td>Same client in train and test?</td>
+            <td>No — GroupShuffleSplit enforces separation</td>
+          </tr>
+          <tr>
+            <td>Position bias in label?</td>
+            <td>Controlled — labels computed within position_tier</td>
+          </tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>4. Results</h2>
+
+        <h3>4.1 Model Performance</h3>
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>ROC AUC</th>
+            <th>Avg Precision</th>
+            <th>Precision@50</th>
+          </tr>
+          <tr>
+            <td>Baseline Rules</td>
+            <td>0.447</td>
+            <td>0.442</td>
+            <td>0.220</td>
+          </tr>
+          <tr>
+            <td>Logistic Regression</td>
+            <td>1.000</td>
+            <td>1.000</td>
+            <td>1.000</td>
+          </tr>
+          <tr>
+            <td>Decision Tree</td>
+            <td>0.999</td>
+            <td>0.999</td>
+            <td>1.000</td>
+          </tr>
+          <tr>
+            <td><strong>Random Forest</strong></td>
+            <td><strong>0.998</strong></td>
+            <td><strong>0.998</strong></td>
+            <td><strong>1.000</strong></td>
+          </tr>
+        </table>
+        <p>
+          All three learned models substantially outperform the transparent
+          baseline. The random forest achieves
+          <span class="highlight"
+            >100% precision in its top 50 recommendations</span
+          >
+          on this synthetic slice.
+        </p>
+        <div class="warning">
+          <strong>Note:</strong> These scores are from the bundled starter
+          dataset. On the full warehouse, expect more realistic generalization
+          (the starter docs cite ~0.75 AUC for random forest as a reference
+          point).
+        </div>
+
+        <div class="chart">
+          <img
+            src="../outputs/charts/06_model_comparison.png"
+            alt="Model comparison"
+          />
+          <p>
+            <em
+              >Figure 1: Model comparison across three metrics on the
+              client-holdout test set.</em
+            >
+          </p>
+        </div>
+
+        <h3>4.2 Signal Profiles: High vs. Low CTR</h3>
+        <div class="chart">
+          <img
+            src="../outputs/charts/02_signal_profiles_high_vs_low.png"
+            alt="Signal profiles"
+          />
+          <p>
+            <em
+              >Figure 2: Standardized signal profiles of high-CTR vs. low-CTR
+              pages.</em
+            >
+          </p>
+        </div>
+
+        <h3>4.3 Feature Importance</h3>
+        <div class="chart">
+          <img
+            src="../outputs/charts/07_feature_importance.png"
+            alt="Feature importance"
+          />
+          <p>
+            <em
+              >Figure 3: Top 20 feature importances from the random forest
+              model.</em
+            >
+          </p>
+        </div>
+
+        <h3>4.4 Precision@K Analysis</h3>
+        <div class="chart">
+          <img
+            src="../outputs/charts/09_precision_at_k.png"
+            alt="Precision at K"
+          />
+          <p>
+            <em
+              >Figure 4: Precision@K curves for all methods on the test set.</em
+            >
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>5. Limitations & Honest Framing</h2>
+
+        <div class="warning">
+          <strong>Observational, not causal.</strong> We identify pages that
+          <em>are</em> underperforming relative to position peers. We do
+          <em>not</em> prove that editing these pages will <em>cause</em> CTR
+          improvement.
+        </div>
+
+        <ul>
+          <li>
+            <strong>Synthetic/starter data:</strong> The bundled dataset may
+            have stronger correlations than real-world data. Results should be
+            validated on the full warehouse release.
+          </li>
+          <li>
+            <strong>Engagement signal endogeneity:</strong>
+            <code>engagement_rate</code> and <code>scroll_rate</code> are
+            post-click metrics measured <em>after</em> the click.
+          </li>
+          <li>
+            <strong
+              >Position-tier stratification reduces but does not eliminate
+              position bias:</strong
+            >
+            Within "page_1" (positions 4–10), a page at position 4 still has an
+            inherent advantage.
+          </li>
+          <li>
+            <strong>Label arbitrariness:</strong> Using the 25th/75th percentile
+            is defensible, but other thresholds would yield different models.
+          </li>
+          <li>
+            <strong>No seasonality control:</strong> The 90-day window may
+            capture seasonal demand shifts.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>6. Ranked Recommendations (Action Playbook)</h2>
+
+        <div class="recommendation">
+          <strong>Priority 1 — Page-One Underperformers</strong><br />
+          <em>Signal:</em> <code>position_tier</code> in [top_3, page_1] AND
+          <code>ctr</code> &lt; 1.0%<br />
+          <em>Action:</em> Rewrite title tag and meta description. Check snippet
+          appearance in SERP.<br />
+          <em>Confidence:</em> High.
+        </div>
+
+        <div class="recommendation">
+          <strong>Priority 2 — High Engagement, Low CTR</strong><br />
+          <em>Signal:</em> <code>engagement_rate</code> &gt; 50% AND
+          <code>ctr</code> &lt; 1.0%<br />
+          <em>Action:</em> The content satisfies users who arrive, but the
+          snippet fails to compel clicks. Test title variants.<br />
+          <em>Confidence:</em> Medium-High.
+        </div>
+
+        <div class="recommendation">
+          <strong>Priority 3 — Thin Visible Pages</strong><br />
+          <em>Signal:</em> <code>word_count</code> &lt; 1200 AND
+          <code>impressions_90d</code> ≥ 500<br />
+          <em>Action:</em> Expand content depth. Add definitions, step-by-step
+          guidance.<br />
+          <em>Confidence:</em> Medium.
+        </div>
+
+        <div class="recommendation">
+          <strong>Priority 4 — Stale Visible Pages</strong><br />
+          <em>Signal:</em> <code>days_since_last_update</code> &gt; 180 AND
+          <code>impressions_90d</code> ≥ 500<br />
+          <em>Action:</em> Refresh statistics, update examples, verify factual
+          accuracy.<br />
+          <em>Confidence:</em> Medium.
+        </div>
+
+        <div class="recommendation">
+          <strong>Priority 5 — Low Scroll Engagement</strong><br />
+          <em>Signal:</em> <code>scroll_rate</code> &lt; 30% AND
+          <code>sessions_90d</code> ≥ 30<br />
+          <em>Action:</em> Improve on-page structure. Add subheadings, bullet
+          points, visual breaks.<br />
+          <em>Confidence:</em> Low-Medium.
+        </div>
+      </section>
+
+      <section>
+        <h2>7. Reproducibility</h2>
+        <p>All code and outputs are available in the repository:</p>
+        <ul>
+          <li>
+            <strong>Main analysis:</strong>
+            <code>work/capstone_analysis.py</code>
+          </li>
+          <li>
+            <strong>Outputs:</strong> <code>outputs/charts/</code>,
+            <code>outputs/model_results.json</code>,
+            <code>outputs/refresh_queue_sample.csv</code>
+          </li>
+        </ul>
+        <pre>
+git clone https://github.com/prjena987/Flyrank-Ai-Starter.git
+cd Flyrank-Ai-Starter
+pip install pandas numpy scikit-learn matplotlib
+python work/capstone_analysis.py
+    </pre
+        >
+      </section>
+
+      <section>
+        <h2>8. Acknowledgments & Data Credit</h2>
+        <p>
+          Built on the <strong>FlyRank ML Internship dataset</strong>. The
+          dataset and internship program are provided by
+          <a href="https://flyrank.ai" target="_blank" rel="noopener">FlyRank</a
+          >.
+        </p>
+      </section>
+
+      <footer>
+        <p>FlyRank ML Internship Capstone — Ranking Signal Analysis Lane.</p>
+        <p>All claims are observational and decision-support only.</p>
+      </footer>
+    </div>
+  </body>
+</html>
